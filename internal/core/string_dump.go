@@ -39,14 +39,14 @@ stream:
 		if err == io.EOF || err == nil {
 		byte:
 			for i := int64(0); i < sz-4; i++ {
-				r := bytes.NewBuffer(b[i:])
+				r := bytes.NewBuffer(b[i : i+4])
 				var len32 int32
 				err = binary.Read(r, binary.LittleEndian, &len32)
 				l := int64(len32)
 				if err != nil {
 					return fmt.Errorf("error reading input buffer: %v", err)
 				}
-				if l > 2 && pos+i+4+l > 0 && pos+i+4+l <= fileSize {
+				if l > 2 && pos+i+4+l > 0 && pos+i+4+l <= fileSize && l < model.ChunkSize {
 					if i+4+l >= model.ChunkSize {
 						if i == 0 {
 							continue byte

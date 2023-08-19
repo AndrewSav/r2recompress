@@ -10,8 +10,6 @@ import (
 	"github.com/AndrewSav/r2recompress/internal/version"
 )
 
-// TODO: dump strings mode
-
 func main() {
 
 	fmt.Printf("r2recompress %s\n", version.BuildVersion())

@@ -122,7 +122,6 @@ func Decompress(input, output string, options model.Options) error {
 		return fmt.Errorf("error hashing preamble: %v", err)
 	}
 
-	chunksCount := 0
 	totalDecompressedSize := uint32(0)
 	var previousDecompressedSize1, previousDecompressedSize2 uint64
 	context := warningContext{
@@ -130,7 +129,7 @@ func Decompress(input, output string, options model.Options) error {
 		singleWarning: *options.SingleWarning,
 	}
 
-	for {
+	for chunksCount := 1; ; chunksCount++ {
 		chunksCount++
 		var ch chunkHeaderData
 
