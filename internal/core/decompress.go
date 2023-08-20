@@ -49,41 +49,41 @@ func fileHeaderChecks(fh model.FileHeader, totalDecompressedSize uint32, crc uin
 	}
 }
 
-func chunkHeaderChecks(chunkNumber int, ch chunkHeaderData, decompressedSize int64, context *warningContext) {
+func chunkHeaderChecks(ch chunkHeaderData, decompressedSize int64, context *warningContext) {
 	if ch.HeaderTag != model.ARCHIVE_V2_HEADER_TAG {
-		message := fmt.Sprintf("wrong chunk %d header HeaderTag field value. have %016x, want %016x", chunkNumber, ch.HeaderTag, model.ARCHIVE_V2_HEADER_TAG)
+		message := fmt.Sprintf("wrong chunk %d header HeaderTag field value. have %016x, want %016x", ch.chunkNumber, ch.HeaderTag, model.ARCHIVE_V2_HEADER_TAG)
 		printWarning(message, context)
 	}
 	if ch.ChunkSize != model.ChunkSize {
-		message := fmt.Sprintf("wrong chunk %d header ChunkSize field value. have %016x, want %016x", chunkNumber, ch.ChunkSize, model.ChunkSize)
+		message := fmt.Sprintf("wrong chunk %d header ChunkSize field value. have %016x, want %016x", ch.chunkNumber, ch.ChunkSize, model.ChunkSize)
 		printWarning(message, context)
 	}
 	if ch.CompressionType != model.CompressionType {
-		message := fmt.Sprintf("wrong chunk %d header CompressionType field value. have %x, want %x", chunkNumber, ch.CompressionType, model.CompressionType)
+		message := fmt.Sprintf("wrong chunk %d header CompressionType field value. have %x, want %x", ch.chunkNumber, ch.CompressionType, model.CompressionType)
 		printWarning(message, context)
 	}
 	if ch.CompressedSize1 != ch.CompressedSize2 {
-		message := fmt.Sprintf("wrong chunk %d header values. CompressedSize1 (%016x) should be equal to CompressedSize2 (%016x), but they are not", chunkNumber, ch.CompressedSize1, ch.CompressedSize2)
+		message := fmt.Sprintf("wrong chunk %d header values. CompressedSize1 (%016x) should be equal to CompressedSize2 (%016x), but they are not", ch.chunkNumber, ch.CompressedSize1, ch.CompressedSize2)
 		printWarning(message, context)
 	}
 	if ch.DecompressedSize1 != ch.DecompressedSize2 {
-		message := fmt.Sprintf("wrong chunk %d header values. DecompressedSize1 (%016x) should be equal to DecompressedSize2 (%016x), but they are not", chunkNumber, ch.DecompressedSize1, ch.DecompressedSize2)
+		message := fmt.Sprintf("wrong chunk %d header values. DecompressedSize1 (%016x) should be equal to DecompressedSize2 (%016x), but they are not", ch.chunkNumber, ch.DecompressedSize1, ch.DecompressedSize2)
 		printWarning(message, context)
 	}
-	if chunkNumber > 1 && ch.previousDecompressedSize1 != model.ChunkSize {
-		message := fmt.Sprintf("wrong chunk %d header DecompressedSize1 field value. have %016x, want %016x", chunkNumber-1, ch.previousDecompressedSize1, model.ChunkSize)
+	if ch.chunkNumber > 1 && ch.previousDecompressedSize1 != model.ChunkSize {
+		message := fmt.Sprintf("wrong chunk %d header DecompressedSize1 field value. have %016x, want %016x", ch.chunkNumber-1, ch.previousDecompressedSize1, model.ChunkSize)
 		printWarning(message, context)
 	}
-	if chunkNumber > 1 && ch.previousDecompressedSize2 != model.ChunkSize {
-		message := fmt.Sprintf("wrong chunk %d header DecompressedSize2 field value. have %016x, want %016x", chunkNumber-1, ch.previousDecompressedSize2, model.ChunkSize)
+	if ch.chunkNumber > 1 && ch.previousDecompressedSize2 != model.ChunkSize {
+		message := fmt.Sprintf("wrong chunk %d header DecompressedSize2 field value. have %016x, want %016x", ch.chunkNumber-1, ch.previousDecompressedSize2, model.ChunkSize)
 		printWarning(message, context)
 	}
 	if decompressedSize > math.MaxUint32 {
-		message := fmt.Sprintf("chunk %d decompressed size more than the threshold have %d, want < %d", chunkNumber, decompressedSize, ch.DecompressedSize1)
+		message := fmt.Sprintf("chunk %d decompressed size more than the threshold have %d, want < %d", ch.chunkNumber, decompressedSize, ch.DecompressedSize1)
 		printWarning(message, context)
 	}
 	if ch.DecompressedSize1 != uint64(decompressedSize) {
-		message := fmt.Sprintf("wrong chunk %d decompressed size have %016x, want %016x", chunkNumber, decompressedSize, ch.DecompressedSize1)
+		message := fmt.Sprintf("wrong chunk %d decompressed size have %016x, want %016x", ch.chunkNumber, decompressedSize, ch.DecompressedSize1)
 		printWarning(message, context)
 	}
 
@@ -130,13 +130,13 @@ func Decompress(input, output string, options model.Options) error {
 	}
 
 	for chunksCount := 1; ; chunksCount++ {
-		chunksCount++
 		var ch chunkHeaderData
 
 		err = binary.Read(inputReader, binary.LittleEndian, &ch.ChunkHeader)
 		if err != nil {
 			return fmt.Errorf("error reading chunk header: %v", err)
 		}
+		ch.chunkNumber = chunksCount
 		if *options.Verbose {
 			ch.Dump(chunksCount)
 		}
@@ -167,7 +167,7 @@ func Decompress(input, output string, options model.Options) error {
 		if *options.Verbose {
 			fmt.Println()
 		}
-		chunkHeaderChecks(chunksCount, ch, decompressedSize, &context)
+		chunkHeaderChecks(ch, decompressedSize, &context)
 		if _, err := inputReader.Peek(1); err == io.EOF {
 			break
 		}
